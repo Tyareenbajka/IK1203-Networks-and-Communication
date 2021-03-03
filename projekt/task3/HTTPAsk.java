@@ -25,7 +25,7 @@ public class HTTPAsk {
             String decodeString = "";
 
             int charChecker = inFromClient.read(fromClientBuffer);
-            while(!decodeString.contains("\n")){
+            while(charChecker != -1){
                 decodeString = new String(fromClientBuffer, 0, charChecker);
                 String[] splitString = decodeString.split("[?&= ]", 10);
 
@@ -43,7 +43,11 @@ public class HTTPAsk {
                     else if(splitString[i].equals("string"))
                         stringFromClient = splitString[i+1];
                 }
+                if(decodeString.contains("\n"))
+                    break;
+                charChecker = inFromClient.read(fromClientBuffer);
             }
+
             if(stringFromClient != null){
                 result = TCPClient.askServer(host, portFromClient, stringFromClient);
             }
