@@ -29,32 +29,45 @@ public class HTTPAsk {
                 decodeString = new String(fromClientBuffer, 0, charChecker);
                 String[] splitString = decodeString.split("[?&= ]", 10);
 
+
                 if(splitString[0].equals("GET") && splitString[1].equals("/ask") && decodeString.contains("HTTP/1.1")){
                     statusMsg = ("HTTP/1.1 200 OK \r\n\r\n");
+                    for(int i = 0; i < splitString.length; i++){
+                        if(splitString[i].equals("hostname"))
+                            host = splitString[i+1];
+                        else if(splitString[i].equals("port"))
+                            portFromClient = Integer.parseInt(splitString[i+1]);
+                        else if(splitString[i].equals("string"))
+                            stringFromClient = splitString[i+1];
+                    }
                 }
                 else{
-                    statusMsg = ("HTTP/1.1 400 Bad Request \r\n\r\n");
+                    statusMsg = ("HTTP/1.1 400 Bad Request \r\n");
                 }
-                for(int i = 0; i < splitString.length; i++){
-                    if(splitString[i].equals("hostname"))
-                        host = splitString[i+1];
-                    else if(splitString[i].equals("port"))
-                        portFromClient = Integer.parseInt(splitString[i+1]);
-                    else if(splitString[i].equals("string"))
-                        stringFromClient = splitString[i+1];
-                }
+
                 if(decodeString.contains("\n"))
                     break;
                 charChecker = inFromClient.read(fromClientBuffer);
             }
+            if(!(statusMsg.contains("HTTP/1.1 400 Bad Request"))){
 
-            if(stringFromClient != null){
-                result = TCPClient.askServer(host, portFromClient, stringFromClient);
+                try{
+                    if(stringFromClient != null){
+                        result = TCPClient.askServer(host, portFromClient, stringFromClient);
+                    }
+                    else{
+                        result = TCPClient.askServer(host, portFromClient);
+                    }
+                    outToClientData.append(statusMsg + result + "\r\n");
+
+                } catch (IOException e) {
+                    statusMsg = ("HTTP/1.1 404 Not Found \r\n");
+                    outToClientData.append(statusMsg + "\n");
+                }
             }
-            else{
-                result = TCPClient.askServer(host, portFromClient);
-            }
-            outToClientData.append(statusMsg + result + "\r\n");
+            else
+                outToClientData.append(statusMsg + "\n");
+
             byte [] sendDataToClient = outToClientData.toString().getBytes();
             outToClient.write(sendDataToClient);
             connectionSocket.close();
